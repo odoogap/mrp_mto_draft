@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Sale Order Form-view: Add "Lock Documents" button to top strip.   -->
+        <record model="ir.ui.view" id="view_order_form_mods">
+            <field name="name">view.sale.order.form.inherit.sale_mrp_extended</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//button[@name='action_confirm']" position="after">
+                    <button name="lock_so" id="action_done_so" data-hotkey="v" string="Lock Documents"
+                            class="btn-primary" type="object"
+                            attrs="{'invisible': [('state', 'not in', ('sale','cancel'))]}"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Picking Form-View:
+            1. For DO created from SOs for configurable product, make the "Product" field read-only.
+            2. For DO created from SOs for configurable product, Remove "Mark as To Do" button.
+        -->
+        <record id="view_picking_form_inherit_sale_mrp" model="ir.ui.view">
+            <field name="name">stock.picking.form</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='move_ids_without_package']/tree/field[@name='product_id']"
+                       position="before">
+                    <field name="is_from_so_configuration_product" invisible="1"/>
+                </xpath>
+                <xpath expr="//field[@name='move_ids_without_package']/tree/field[@name='product_id']"
+                       position="attributes">
+                    <attribute name="attrs">{'readonly': [('is_from_so_configuration_product', '=', True)]}</attribute>
+                </xpath>
+                <xpath expr="//button[@name='action_confirm']" position="before">
+                    <field name="is_from_so_configuration_product" invisible="1"/>
+                </xpath>
+                <xpath expr="//button[@name='action_confirm']" position="attributes">
+                    <attribute name="attrs">{'invisible': ['|',('is_from_so_configuration_product', '=',
+                        True),('show_mark_as_todo', '=', False)]}
+                    </attribute>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
