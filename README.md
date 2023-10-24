@@ -1,7 +1,9 @@
 # MRP MTO Draft
+[mrp_mto_draft](mrp_mto_draft), Version 15.0.1.0.0
 
 ## Overview
-
+[mrp_mto_draft](mrp_mto_draft), Version 15.0.1.0.0
+- Allow the sales order line configurator to be edited for changes of product attributes on confirmed sales order, and on changes to product attributes reflected in related delivery orders and manufacturing orders as well.
 
 ## Purpose
 
