@@ -5,7 +5,7 @@ class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
     is_from_so_configuration_product = fields.Boolean(string="From SO Configuration Product",
-                                                      compute='_compute_from_so_congiguration_product')
+                                                    compute='_compute_from_so_congiguration_product')
 
     def _compute_from_so_congiguration_product(self):
         for picking in self:

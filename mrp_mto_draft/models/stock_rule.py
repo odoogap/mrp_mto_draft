@@ -1,77 +1,56 @@
 # -*- coding: utf-8 -*-
-from collections import defaultdict
-
-from odoo.tools import float_compare
-
-from odoo import SUPERUSER_ID, _
-from odoo import api, models
-from odoo.addons.stock.models.stock_rule import ProcurementException
+from odoo import api, models, _
 
 
 class StockRule(models.Model):
     _inherit = 'stock.rule'
+
+    def _should_auto_confirm_procurement_mo(self, p):
+        return False
 
     @api.model
     def _run_manufacture(self, procurements):
         """
         Override the method because of the set the MO's as Draft stage and stop create new MO if Draft MO Found
         """
-        productions_values_by_company = defaultdict(list)
-        errors = []
-        for procurement, rule in procurements:
-            if float_compare(procurement.product_qty, 0, precision_rounding=procurement.product_uom.rounding) <= 0:
-                # If procurement contains negative quantity, don't create a MO that would be for a negative value.
-                continue
-            bom = rule._get_matching_bom(procurement.product_id, procurement.company_id, procurement.values)
-
-            productions_values_by_company[procurement.company_id.id].append(rule._prepare_mo_vals(*procurement, bom))
-
-        if errors:
-            raise ProcurementException(errors)
-
-        for company_id, productions_values in productions_values_by_company.items():
-            # create the MO as SUPERUSER because the current user may not have the rights to do it (mto product launched by a sale for example)
-            procurement_groups = procurement.values.get('group_id')
-            # Finding the Draft MO aif Found Draft MO than system will not create the Draft MO
-            mrp_production_ids = set(
-                procurement_groups.stock_move_ids.created_production_id.procurement_group_id.mrp_production_ids.ids) | \
-                                 set(procurement_groups.mrp_production_ids.ids)
-            mrp_production_ids = list(mrp_production_ids)
-            existing_productions = self.env['mrp.production'].browse(mrp_production_ids)
-            draft_productions = existing_productions.filtered(lambda x: x.state == 'draft' and x.product_id == self._context.get('old_product_id'))
+        draft_productions = self.env['mrp.production']
+        ctx = dict(self.env.context)
+        if ctx.get('old_product_id'):
+            for procurement, rule in procurements:
+                draft_productions = self.env['mrp.production'].search([('product_id', '=', ctx['old_product_id']), ('state', '=', 'draft')], limit=1)
+                if draft_productions:
+                    draft_productions.workorder_ids.unlink()
+                    production_vals = {
+                        'product_id': procurement.product_id,
+                        'procurement_group_id': procurement.values.get('group_id')
+                    }
+                    if 'updated_order_qty' in ctx:
+                        production_vals['product_qty'] = ctx.get('updated_order_qty', 0)
+                    draft_productions._update_mo_from_sale(production_vals)
             if draft_productions:
-                draft_productions.workorder_ids.unlink()
-                draft_productions.product_id = procurement.product_id
-                draft_productions._create_workorder()
-            productions = draft_productions
-            if not draft_productions:
-                productions = self.env['mrp.production'].with_user(SUPERUSER_ID).sudo().with_company(company_id).create(
-                    productions_values)
-            self.env['stock.move'].sudo().create(productions._get_moves_raw_values())
-            self.env['stock.move'].sudo().create(productions._get_moves_finished_values())
-            if not draft_productions:
-                productions._create_workorder()
+                return True
+        return super()._run_manufacture(procurements)
 
-            # Comment this line because when MO created from the SO that Time MO should be in Draft stage
-            # productions.filtered(self._should_auto_confirm_procurement_mo).action_confirm()
+    def _get_stock_move_values(self, product_id, product_qty, product_uom, location_id, name, origin, company_id, values):
+        move_values = super()._get_stock_move_values(product_id, product_qty, product_uom, location_id, name, origin, company_id, values)
+        ctx = dict(self.env.context)
+        if values.get('sale_line_id') and ctx.get('updated_order_qty'):
+            move_values['product_uom_qty'] = ctx['updated_order_qty']
+        return move_values
 
-            for production in productions:
-                origin_production = production.move_dest_ids and production.move_dest_ids[
-                    0].raw_material_production_id or False
-                orderpoint = production.orderpoint_id
-                if orderpoint and orderpoint.create_uid.id == SUPERUSER_ID and orderpoint.trigger == 'manual':
-                    production.message_post(
-                        body=_('This production order has been created from Replenishment Report.'),
-                        message_type='comment',
-                        subtype_xmlid='mail.mt_note')
-                elif orderpoint:
-                    production.message_post_with_view(
-                        'mail.message_origin_link',
-                        values={'self': production, 'origin': orderpoint},
-                        subtype_id=self.env.ref('mail.mt_note').id)
-                elif origin_production:
-                    production.message_post_with_view(
-                        'mail.message_origin_link',
-                        values={'self': production, 'origin': origin_production},
-                        subtype_id=self.env.ref('mail.mt_note').id)
-        return True
+    @api.model
+    def _run_pull(self, procurements):
+        """
+            Override method to remove existing move when sale order line is update from confrim sale order
+        """
+        ctx = dict(self.env.context)
+        StockMove = self.env['stock.move']
+        if ctx.get('old_product_id'):
+            for procurement, rule in procurements:
+                if procurement.values and procurement.values.get('sale_line_id'):
+                    # on update sale order line remove existing move
+                    move = StockMove.search([('sale_line_id', '=', procurement.values['sale_line_id'])])
+                    if move:
+                        move._action_cancel()
+                        move.sudo().unlink()
+        return super()._run_pull(procurements)
