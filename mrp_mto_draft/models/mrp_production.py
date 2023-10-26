@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import fields, models, Command
 
 
 class MrpProduction(models.Model):
@@ -24,8 +24,5 @@ class MrpProduction(models.Model):
         if 'product_qty' in vals and not vals.get('product_qty', 0):
             self.action_cancel()
         else:
+            self.move_raw_ids = [Command.clear()]
             self.write(vals)
-            self._onchange_product_qty()
-            self._onchange_move_finished_product()
-            self._update_bom_id()
-            self._create_workorder()

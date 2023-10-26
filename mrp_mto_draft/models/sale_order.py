@@ -7,7 +7,7 @@ class SaleOrder(models.Model):
 
     def action_confirm(self):
         res = super().action_confirm()
-        self.picking_ids.filtered(lambda x: x.state == 'waiting').move_lines.write({'state': 'draft'})
+        self.picking_ids.filtered(lambda x: x.state == 'waiting').write({'state': 'draft'})
         return res
 
     def lock_so(self):
