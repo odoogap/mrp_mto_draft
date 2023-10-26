@@ -13,22 +13,19 @@ class StockRule(models.Model):
         """
         Override the method because of the set the MO's as Draft stage and stop create new MO if Draft MO Found
         """
-        draft_productions = self.env['mrp.production']
         ctx = dict(self.env.context)
-        if ctx.get('old_product_id'):
+        if ctx.get('draft_production_id') and ctx.get('old_product_id'):
+            draft_production = self.env['mrp.production'].search([('id', '=', ctx['draft_production_id'])])
             for procurement, rule in procurements:
-                draft_productions = self.env['mrp.production'].search([('product_id', '=', ctx['old_product_id']), ('state', '=', 'draft')], limit=1)
-                if draft_productions:
-                    draft_productions.workorder_ids.unlink()
+                if draft_production:
+                    draft_production.workorder_ids.unlink()
                     production_vals = {
                         'product_id': procurement.product_id,
-                        'procurement_group_id': procurement.values.get('group_id')
                     }
                     if 'updated_order_qty' in ctx:
                         production_vals['product_qty'] = ctx.get('updated_order_qty', 0)
-                    draft_productions._update_mo_from_sale(production_vals)
-            if draft_productions:
-                return True
+                    draft_production._update_mo_from_sale(production_vals)
+            return True
         return super()._run_manufacture(procurements)
 
     def _get_stock_move_values(self, product_id, product_qty, product_uom, location_id, name, origin, company_id, values):
