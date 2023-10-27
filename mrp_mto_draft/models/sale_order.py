@@ -41,8 +41,17 @@ class SaleOrderLine(models.Model):
             line.product_updatable = True
 
     def write(self, vals):
-        old_product_id = self.product_id
-        ctx = {'old_product_id': old_product_id.id}
+        old_product_id = self.product_id.id
+        procurement_groups = self.env['procurement.group'].search([('sale_id', '=', self.order_id.id)])
+        mrp_production_ids = set(
+            procurement_groups.stock_move_ids.created_production_id.procurement_group_id.mrp_production_ids.ids) | \
+                            set(procurement_groups.mrp_production_ids.ids)
+        mrp_production_ids = list(mrp_production_ids)
+        production = self.env['mrp.production'].search([('id', 'in', mrp_production_ids), ('state', '=', 'draft'), ('product_id', '=', old_product_id)], limit=1)
+        ctx = {'old_product_id': old_product_id, 'draft_production_id': production.id}
         if 'product_uom_qty' in vals:
             ctx['updated_order_qty'] = vals.get('product_uom_qty', 0)
-        return super(SaleOrderLine, self.with_context(ctx)).write(vals)
+        res = super(SaleOrderLine, self.with_context(ctx)).write(vals)
+        if production:
+            self.move_ids.write({'created_production_id': production.id})
+        return res
