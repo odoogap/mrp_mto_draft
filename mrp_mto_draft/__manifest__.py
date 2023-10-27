@@ -24,12 +24,6 @@
         'views/stock_picking_views.xml',
         'views/mrp_production_views.xml'
     ],
-    'assets': {
-        'web.assets_backend': [
-            'mrp_mto_draft/static/src/js/product_configurator_widget.js',
-        ],
-    },
-
     # Module Specific
     'application': False,
     'installable': True,

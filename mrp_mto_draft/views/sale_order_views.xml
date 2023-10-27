@@ -10,6 +10,7 @@
                 <xpath expr="//button[@name='action_confirm']" position="after">
                     <button name="lock_so" id="action_done_so" data-hotkey="v" string="Lock Documents"
                             class="btn-primary" type="object"
+                            confirm="Are you sure you want to lock the documents?"
                             attrs="{'invisible': [('state', 'not in', ('sale','cancel'))]}"/>
                 </xpath>
             </field>
