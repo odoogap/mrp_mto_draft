@@ -5,11 +5,6 @@ from odoo import api, models
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    def action_confirm(self):
-        res = super().action_confirm()
-        self.picking_ids.filtered(lambda x: x.state == 'waiting').write({'state': 'draft'})
-        return res
-
     def lock_so(self):
         """Lock Documents Function."""
         self.action_done()
