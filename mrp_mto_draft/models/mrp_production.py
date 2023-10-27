@@ -21,7 +21,6 @@ class MrpProduction(models.Model):
             self.write(vals)
             self._onchange_product_id()
             self._onchange_product_qty()
-            self._onchange_move_finished_product()
             self.move_raw_ids = [(5,)]
             self._onchange_move_raw()
             self._create_workorder()

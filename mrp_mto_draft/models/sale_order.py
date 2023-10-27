@@ -54,4 +54,5 @@ class SaleOrderLine(models.Model):
         res = super(SaleOrderLine, self.with_context(ctx)).write(vals)
         if production:
             self.move_ids.write({'created_production_id': production.id})
+            production._onchange_move_finished_product()
         return res
