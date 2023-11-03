@@ -7,7 +7,7 @@ class SaleOrder(models.Model):
 
     def lock_so(self):
         """Lock Documents Function."""
-        self.action_done()
+        self.action_lock()
         procurement_groups = self.env['procurement.group'].search([('sale_id', 'in', self.ids)])
         mrp_production_ids = set(
             procurement_groups.stock_move_ids.created_production_id.procurement_group_id.mrp_production_ids.ids) | \

@@ -12,6 +12,3 @@ class StockMove(models.Model):
             mv.is_from_so_configuration_product = False
             if mv.sale_line_id and mv.product_id.product_add_mode == 'configurator':
                 mv.is_from_so_configuration_product = True
-
-
-

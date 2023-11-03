@@ -14,11 +14,10 @@
                     <field name="is_from_so_configuration_product" invisible="1"/>
                 </xpath>
                 <xpath expr="//field[@name='product_id']" position="attributes">
-                    <attribute name="attrs">{'readonly': [('is_from_so_configuration_product', '=', True)]}</attribute>
+                    <attribute name="readonly">"is_from_so_configuration_product = 'True'"</attribute>
                 </xpath>
                 <xpath expr="//button[@name='action_confirm']" position="attributes">
-                    <attribute name="attrs">{'invisible': ['|',('is_from_so_configuration_product', '=', True),('state',
-                        '!=', 'draft')]}
+                    <attribute name="invisible">"is_from_so_configuration_product = 'True' or state = 'draft'"
                     </attribute>
                 </xpath>
             </field>
