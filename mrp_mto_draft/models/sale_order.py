@@ -29,9 +29,10 @@ class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
     def _get_protected_fields(self):
-        """Remove 'name' from protected fields."""
+        """Remove 'name', 'tax' from protected fields."""
         fields = super()._get_protected_fields()
-        fields.remove("name")
+        exclude_fields = ['name', 'tax_id']
+        fields = [item for item in fields if item not in exclude_fields]
         return fields
 
     @api.depends('product_id', 'order_id.state', 'qty_invoiced', 'qty_delivered')
